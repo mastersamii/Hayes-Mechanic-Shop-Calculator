@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Hayes Redline Mechanic Shop Repair Calculator</title>
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="https://i.ibb.co/qFC7t6D9/HR.png">
   <link rel="apple-touch-icon" href="https://i.ibb.co/qFC7t6D9/HR.png">
   <meta name="theme-color" content="#0f172a">
@@ -24,17 +23,11 @@
     header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:20px}
     .brand{display:flex;align-items:center;gap:12px}
     .brand .logo{width:48px;height:48px;border-radius:12px;box-shadow:var(--shadow);display:grid;place-items:center;background:linear-gradient(135deg,var(--brand) 0 55%, var(--accent) 55% 100%);color:#0b1220;font-size:22px}
-
-    /* Themed form controls */
     input, select, textarea {
-      color: var(--ink);
-      background: var(--chip);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 6px 10px;
+      color: var(--ink); background: var(--chip); border: 1px solid var(--border);
+      border-radius: 10px; padding: 6px 10px;
     }
     input::placeholder { color: var(--muted); }
-
     .brand h1{font-size:1.4rem;letter-spacing:.2px}
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
     @media (max-width:980px){.grid{grid-template-columns:1fr}}
@@ -86,12 +79,10 @@
         </div>
       </div>
       <div class="toolrow">
-        <!-- Employee input -->
         <label class="chip" style="display:flex;align-items:center;gap:8px">
           <span>Employee</span>
           <input id="empName" placeholder="e.g., Samii" style="border:1px solid var(--border);background:var(--chip);padding:6px 10px;border-radius:10px;width:160px;">
         </label>
-
         <span class="chip">Autosaves</span>
         <button class="btn ghost" id="themeBtn" aria-pressed="false" title="Toggle dark mode">🌙 Dark</button>
         <button class="btn ghost" id="resetBtn">Clear All</button>
@@ -108,7 +99,6 @@
     </div>
 
     <div class="grid">
-      <!-- Left: Menu -->
       <section class="panel">
         <h2>Menu</h2>
         <div class="content">
@@ -116,7 +106,6 @@
             <h3 style="margin:0 0 8px 0">Body Parts</h3>
             <div class="cards" id="damage"></div>
           </div>
-
           <div class="section">
             <h3 style="margin:0 0 8px 0">Materials & Shop Items</h3>
             <div class="cards" id="materials"></div>
@@ -124,7 +113,6 @@
         </div>
       </section>
 
-      <!-- Right: Orders -->
       <aside class="panel">
         <h2>Orders</h2>
         <div class="content">
@@ -221,74 +209,19 @@
   </div>
 
   <script>
-    // ---------- Cloud API (Pizza-style) ----------
-    // Replace API_URL with your deployed Apps Script Web App "exec" URL.
-    const API_URL = 'https://script.google.com/macros/s/AKfycbzhyno82pjqs7hU1EdAVc4SLutHT8W63CchiotSO1mQwlS9I0HtWllhpRZDjkMKHeMAuA/exec';
-
-    async function api(method, body){
-      const url = API_URL + '?m=' + encodeURIComponent(method);
-      if (method === 'list') {
-        const res = await fetch(url, { method:'GET' });
-        const text = await res.text();
-        let data = {};
-        try { data = JSON.parse(text); } catch {}
-        if (!res.ok || data.ok === false) {
-          const msg = (data && data.error) ? data.error : \`HTTP \${res.status} \${res.statusText}\`;
-          throw new Error(msg);
-        }
-        return data;
-      }
-      const res = await fetch(url, { method:'POST', body: JSON.stringify(body || {}) });
-      const text = await res.text();
-      let data = {};
-      try { data = JSON.parse(text); } catch {}
-      if (!res.ok || data.ok === false) {
-        const msg = (data && data.error) ? data.error : \`HTTP \${res.status} \${res.statusText}\`;
-        throw new Error(msg);
-      }
-      return data;
-    }
-
-    async function fetchSharedHistory(){
-      try{
-        const out = await api('list');
-        const rows = out.rows || [];
-        state.history = rows.map(row => ({
-          id: Number(row.timestamp_ms),
-          items: JSON.parse(row.items_json || '[]'),
-          discountPct: Number(row.discountPct || 0),
-          subtotal: Number(row.subtotal || 0),
-          total: Number(row.total || 0),
-          employee: row.employee || 'Unknown'
-        }));
-        persistHistory();
-        populateEmpFilter();
-        renderHistory();
-      }catch(e){
-        console.error(e);
-        // fallback to whatever is in local storage
-        populateEmpFilter();
-        renderHistory();
-      }
-    }
-
-    async function createSharedOrder(payload){
-      // payload: { id, employee, items, subtotal, discountPct, total }
-      await api('create', payload);
-    }
-
-    async function deleteSharedOrder(id){
-      await api('delete', { id });
-    }
+    // ---------- Google Sheets API (Apps Script) ----------
+    //  Web App URL (NO newline, NO spaces):
+    const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycby2EoSnFEL5GHW8_x6w8m-JPGyowl9BD6AciX3KK4YixV7n9GDHXLEtJ9cdLr2y9vur4Q/exec';
+    const SHEETS_API_KEY = ''; // leave blank if you didn't set one in Script Properties
 
     // ---------- Data ----------
     const MENU = {
       damage: [
-        { id:'dm-window', name:'💥Window', price:45,  type:'damage', recipe:{'Glass':1} },
-        { id:'dm-door',   name:'🚪Door',   price:75,  type:'damage', recipe:{'Scrap':1} },
-        { id:'dm-hood',   name:'🛡️Hood',  price:75,  type:'damage', recipe:{'Scrap':1} },
-        { id:'dm-trunk',  name:'📦Trunk',  price:75,  type:'damage', recipe:{'Scrap':1} },
-        { id:'dm-tire',   name:'⚫Tire',   price:20,  type:'damage', recipe:{'Rubber':1} },
+        { id:'dm-window', name:'💥Window', price:45,  type:'damage',  recipe:{'Glass':1} },
+        { id:'dm-door',   name:'🚪Door',   price:75,  type:'damage',  recipe:{'Scrap':1} },
+        { id:'dm-hood',   name:'🛡️Hood',  price:75,  type:'damage',  recipe:{'Scrap':1} },
+        { id:'dm-trunk',  name:'📦Trunk',  price:75,  type:'damage',  recipe:{'Scrap':1} },
+        { id:'dm-tire',   name:'⚫Tire',   price:20,  type:'damage',  recipe:{'Rubber':1} },
       ],
       materials: [
         { id:'mat-glass',   name:'💎Glass',      price:45,  type:'material', recipe:{'Glass':1} },
@@ -318,12 +251,7 @@
     const STATE_KEY = 'hayes_state_blueyellow_v1';
     const HIST_KEY  = 'hayes_history_blueyellow_v1';
 
-    const state = {
-      cart:[],
-      discountPct:0,
-      history:[],
-      buy:{}
-    };
+    const state = { cart:[], discountPct:0, history:[], buy:{} };
 
     try{
       const saved = JSON.parse(localStorage.getItem(STATE_KEY)||'{}');
@@ -343,13 +271,62 @@
     const persist = () => localStorage.setItem(STATE_KEY, JSON.stringify(state));
     const persistHistory = () => localStorage.setItem(HIST_KEY, JSON.stringify(state.history));
 
-    // ---------- Employee name memory ----------
+    // ---------- Employee ----------
     const empInput = document.getElementById('empName');
     empInput.value = localStorage.getItem('hayes_emp') || '';
     empInput.addEventListener('input', () =>
       localStorage.setItem('hayes_emp', empInput.value.trim())
     );
     const currentEmployee = () => (empInput.value || 'Unknown').trim();
+
+    // ---------- Sheets helpers ----------
+    async function fetchSharedHistory() {
+      try{
+        const url = new URL(SHEETS_API_URL);
+        url.searchParams.set('action', 'list');
+        if (SHEETS_API_KEY) url.searchParams.set('key', SHEETS_API_KEY);
+
+        const res = await fetch(url.toString(), { method: 'GET' });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Failed to fetch history');
+
+        state.history = (data.data || []).map(row => ({
+          id: Number(row.timestamp_ms),
+          items: JSON.parse(row.items_json || '[]'),
+          discountPct: Number(row.discountPct || 0),
+          subtotal: Number(row.subtotal || 0),
+          total: Number(row.total || 0),
+          employee: row.employee || 'Unknown'
+        }));
+        persistHistory();
+        populateEmpFilter();
+        renderHistory();
+      }catch(e){
+        console.error(e);
+        populateEmpFilter();
+        renderHistory();
+      }
+    }
+
+    async function createSharedOrder(payload){
+      const res = await fetch(SHEETS_API_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ action:'create', key:SHEETS_API_KEY, ...payload })
+      });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || 'Sheets write failed');
+    }
+
+    async function deleteSharedOrder(id){
+      const res = await fetch(SHEETS_API_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ action:'delete', key:SHEETS_API_KEY, id })
+      });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || 'Delete failed');
+    }
 
     // ---------- Cards ----------
     function cardHTML(item){
@@ -384,7 +361,7 @@
         const addId = card.querySelector('[data-add]').getAttribute('data-add');
         const item = all.find(i=>i.id===addId);
         card.querySelector('[data-add]').addEventListener('click',()=>{
-          addToCart({ id:item.id, name:item.name, unitPrice:item.price, qty:count, type:item.type });
+          addToCart({ id:item.id, name:item.name, unitPrice:item.price, qty:count, type:item.type || 'material' });
         });
       });
     }
@@ -431,7 +408,6 @@
       const subtotal = state.cart.reduce((s,l)=>s + l.unitPrice*l.qty, 0);
       const manual = +(subtotal * (state.discountPct/100)).toFixed(2);
       const total = subtotal - manual;
-
       document.getElementById('subtotal').textContent = currency(subtotal);
       document.getElementById('discount').textContent = `-${currency(manual)}`;
       document.getElementById('total').textContent = currency(total);
@@ -519,7 +495,7 @@
     }
 
     document.getElementById('clearHistoryBtn').addEventListener('click',()=>{
-      alert('Shared history lives in Google Sheets. Delete rows there or use Delete per order.');
+      alert('Shared history lives in Google Sheets (tab "Orders"). To clear globally, delete rows there or use Delete per order.');
     });
 
     // ---------- Tabs ----------
