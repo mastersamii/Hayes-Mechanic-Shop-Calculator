@@ -14,7 +14,8 @@
       --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08);
     }
     [data-theme="dark"]{
-      --bg:#0b1220; --panel:#0f172a; --card:#0b1328; --chip:#0b1b3a; --border:#1e293b; --ink:#e6edf6; --muted:#93a4b8; --brand:#3b82f6; --accent:#fbbf24; --accent-2:#f59e0b;
+      --bg:#0b1220; --panel:#0f172a; --card:#0b1328; --chip:#0b1b3a; --border:#1e293b;
+      --ink:#e6edf6; --muted:#93a4b8; --brand:#3b82f6; --accent:#fbbf24; --accent-2:#f59e0b;
     }
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Arial}
@@ -23,11 +24,14 @@
     header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:20px}
     .brand{display:flex;align-items:center;gap:12px}
     .brand .logo{width:48px;height:48px;border-radius:12px;box-shadow:var(--shadow);display:grid;place-items:center;background:linear-gradient(135deg,var(--brand) 0 55%, var(--accent) 55% 100%);color:#0b1220;font-size:22px}
+
+    /* Inputs respect theme */
     input, select, textarea {
       color: var(--ink); background: var(--chip); border: 1px solid var(--border);
       border-radius: 10px; padding: 6px 10px;
     }
     input::placeholder { color: var(--muted); }
+
     .brand h1{font-size:1.4rem;letter-spacing:.2px}
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
     @media (max-width:980px){.grid{grid-template-columns:1fr}}
@@ -79,10 +83,12 @@
         </div>
       </div>
       <div class="toolrow">
+        <!-- Employee input (kept local only) -->
         <label class="chip" style="display:flex;align-items:center;gap:8px">
           <span>Employee</span>
           <input id="empName" placeholder="e.g., Samii" style="border:1px solid var(--border);background:var(--chip);padding:6px 10px;border-radius:10px;width:160px;">
         </label>
+
         <span class="chip">Autosaves</span>
         <button class="btn ghost" id="themeBtn" aria-pressed="false" title="Toggle dark mode">🌙 Dark</button>
         <button class="btn ghost" id="resetBtn">Clear All</button>
@@ -99,6 +105,7 @@
     </div>
 
     <div class="grid">
+      <!-- Left: Menu -->
       <section class="panel">
         <h2>Menu</h2>
         <div class="content">
@@ -106,6 +113,7 @@
             <h3 style="margin:0 0 8px 0">Body Parts</h3>
             <div class="cards" id="damage"></div>
           </div>
+
           <div class="section">
             <h3 style="margin:0 0 8px 0">Materials & Shop Items</h3>
             <div class="cards" id="materials"></div>
@@ -113,6 +121,7 @@
         </div>
       </section>
 
+      <!-- Right: Orders -->
       <aside class="panel">
         <h2>Orders</h2>
         <div class="content">
@@ -149,18 +158,8 @@
             </div>
           </div>
 
-          <!-- HISTORY TAB -->
+          <!-- HISTORY TAB (local only) -->
           <div id="tab-history" role="tabpanel" hidden>
-            <div class="toolrow" style="margin-bottom:8px;">
-              <label class="chip" style="display:flex;align-items:center;gap:8px">
-                <span>Filter</span>
-                <select id="empFilter" style="border:1px solid var(--border);background:var(--chip);padding:6px 10px;border-radius:10px;">
-                  <option value="__all__">All employees</option>
-                </select>
-              </label>
-              <button class="btn" id="refreshHistoryBtn">Refresh</button>
-            </div>
-
             <div class="summary" style="gap:8px; margin-bottom:8px;">
               <div class="row"><span>Orders served today</span><strong id="ordersToday">0</strong></div>
               <div class="row"><span>Orders served overall</span><strong id="ordersOverall">0</strong></div>
@@ -193,7 +192,7 @@
 
             <div class="order-card" id="buyRows" style="padding:8px;"></div>
 
-            <div class="summary" style="margin-top:12px;">
+            <div class="summary" style="margin-top:12px%;">
               <div class="row"><span>Subtotal to Pay</span><strong id="buySubtotal">$0.00</strong></div>
               <div class="row total"><span>Total to Pay</span><strong id="buyTotal">$0.00</strong></div>
             </div>
@@ -209,11 +208,6 @@
   </div>
 
   <script>
-    // ---------- Google Sheets API (Apps Script) ----------
-    //  Web App URL (NO newline, NO spaces):
-    const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycby2EoSnFEL5GHW8_x6w8m-JPGyowl9BD6AciX3KK4YixV7n9GDHXLEtJ9cdLr2y9vur4Q/exec';
-    const SHEETS_API_KEY = ''; // leave blank if you didn't set one in Script Properties
-
     // ---------- Data ----------
     const MENU = {
       damage: [
@@ -271,62 +265,13 @@
     const persist = () => localStorage.setItem(STATE_KEY, JSON.stringify(state));
     const persistHistory = () => localStorage.setItem(HIST_KEY, JSON.stringify(state.history));
 
-    // ---------- Employee ----------
+    // ---------- Employee (local memory only) ----------
     const empInput = document.getElementById('empName');
     empInput.value = localStorage.getItem('hayes_emp') || '';
     empInput.addEventListener('input', () =>
       localStorage.setItem('hayes_emp', empInput.value.trim())
     );
     const currentEmployee = () => (empInput.value || 'Unknown').trim();
-
-    // ---------- Sheets helpers ----------
-    async function fetchSharedHistory() {
-      try{
-        const url = new URL(SHEETS_API_URL);
-        url.searchParams.set('action', 'list');
-        if (SHEETS_API_KEY) url.searchParams.set('key', SHEETS_API_KEY);
-
-        const res = await fetch(url.toString(), { method: 'GET' });
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Failed to fetch history');
-
-        state.history = (data.data || []).map(row => ({
-          id: Number(row.timestamp_ms),
-          items: JSON.parse(row.items_json || '[]'),
-          discountPct: Number(row.discountPct || 0),
-          subtotal: Number(row.subtotal || 0),
-          total: Number(row.total || 0),
-          employee: row.employee || 'Unknown'
-        }));
-        persistHistory();
-        populateEmpFilter();
-        renderHistory();
-      }catch(e){
-        console.error(e);
-        populateEmpFilter();
-        renderHistory();
-      }
-    }
-
-    async function createSharedOrder(payload){
-      const res = await fetch(SHEETS_API_URL, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ action:'create', key:SHEETS_API_KEY, ...payload })
-      });
-      const data = await res.json();
-      if(!data.ok) throw new Error(data.error || 'Sheets write failed');
-    }
-
-    async function deleteSharedOrder(id){
-      const res = await fetch(SHEETS_API_URL, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ action:'delete', key:SHEETS_API_KEY, id })
-      });
-      const data = await res.json();
-      if(!data.ok) throw new Error(data.error || 'Delete failed');
-    }
 
     // ---------- Cards ----------
     function cardHTML(item){
@@ -418,44 +363,26 @@
     function renderDiscount(){ range.value=state.discountPct; discountLabel.textContent = `${state.discountPct}%`; }
     range.addEventListener('input',()=>{ state.discountPct=+range.value; persist(); renderTotals(); discountLabel.textContent = `${state.discountPct}%`; });
 
-    // ---------- Employee Filter ----------
-    const empFilter = document.getElementById('empFilter');
-    function populateEmpFilter(){
-      if(!empFilter) return;
-      const current = empFilter.value || '__all__';
-      const names = Array.from(new Set(state.history.map(h => (h.employee||'Unknown').trim()))).sort((a,b)=>a.localeCompare(b));
-      empFilter.innerHTML = `<option value="__all__">All employees</option>` + names.map(n => `<option value="${n}">${n}</option>`).join('');
-      if([...empFilter.options].some(o=>o.value===current)) empFilter.value = current;
-    }
-    empFilter?.addEventListener('change', renderHistory);
-
-    function getFilteredHistory(){
-      const sel = empFilter?.value || '__all__';
-      return sel==='__all__' ? state.history : state.history.filter(h => (h.employee||'Unknown')===sel);
-    }
-
-    // ---------- History ----------
-    function ordersServedCounters(view = getFilteredHistory()){
+    // ---------- History (local) ----------
+    function ordersServedCounters(){
       const todayStr=new Date().toDateString();
-      const today=view.filter(h=> new Date(h.id).toDateString()===todayStr).length;
-      const overall=view.length;
+      const today=state.history.filter(h=> new Date(h.id).toDateString()===todayStr).length;
+      const overall=state.history.length;
       document.getElementById('ordersToday').textContent=today;
       document.getElementById('ordersOverall').textContent=overall;
     }
 
     function renderHistory(){
-      const view = getFilteredHistory();
-      ordersServedCounters(view);
+      ordersServedCounters();
       const list=document.getElementById('historyList');
-      if(!view.length){ list.innerHTML='<div class="muted">No past orders yet for this filter.</div>'; return; }
-      list.innerHTML = view.map(h=>`
+      if(!state.history.length){ list.innerHTML='<div class="muted">No past orders yet. Checkout to save one.</div>'; return; }
+      list.innerHTML = state.history.map(h=>`
         <article class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
             <div>
               <div><strong>${new Date(h.id).toLocaleString()}</strong></div>
               <div class="small">
-                ${h.items.length} item(s) • Discount ${h.discountPct}% •
-                <strong>Employee:</strong> ${h.employee || 'Unknown'}
+                ${h.items.length} item(s) • Discount ${h.discountPct}%${h.employee ? ` • <strong>Employee:</strong> ${h.employee}` : ''}
               </div>
             </div>
             <div><strong>${currency(h.total)}</strong></div>
@@ -480,22 +407,17 @@
         h.items.forEach(it => addToCart({ id:it.id||null, name:it.name, unitPrice:it.unit, qty:it.qty, type:it.type||'material' }));
       }));
 
-      // Delete (shared)
-      list.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click', async ()=>{
-        const id = +btn.getAttribute('data-delete');
-        if(!confirm('Delete this order for everyone?')) return;
-        try{
-          await deleteSharedOrder(id);
-          await fetchSharedHistory();
-        }catch(e){
-          console.error(e);
-          alert('Could not delete shared order.');
-        }
+      // Delete (local)
+      list.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click',()=>{
+        const id=+btn.getAttribute('data-delete');
+        state.history = state.history.filter(x=>x.id!==id);
+        persistHistory();
+        renderHistory();
       }));
     }
 
     document.getElementById('clearHistoryBtn').addEventListener('click',()=>{
-      alert('Shared history lives in Google Sheets (tab "Orders"). To clear globally, delete rows there or use Delete per order.');
+      if(confirm('Clear all saved orders?')){ state.history=[]; persistHistory(); renderHistory(); ordersServedCounters(); }
     });
 
     // ---------- Tabs ----------
@@ -507,7 +429,7 @@
       document.getElementById('tab-buy').hidden = which!=='buy';
       tabButtons.forEach(b=>b.setAttribute('aria-selected', String(b.getAttribute('data-tab')===which)));
       if(which==='ingredients') renderIngredients();
-      if(which==='history'){ populateEmpFilter(); renderHistory(); }
+      if(which==='history') ordersServedCounters();
       if(which==='buy') renderBuyTab();
     }
     tabButtons.forEach(b=>b.addEventListener('click',()=>selectTab(b.getAttribute('data-tab'))));
@@ -539,8 +461,8 @@
       const a=document.createElement('a'); a.href=url; a.download='hayes_materials.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     });
 
-    // ---------- Checkout / Reset ----------
-    async function checkout(){
+    // ---------- Checkout / Reset (LOCAL ONLY) ----------
+    function checkout(){
       if(!state.cart.length){ alert('Cart is empty.'); return; }
       const subtotal=state.cart.reduce((s,l)=>s+l.unitPrice*l.qty,0);
       const manual=+(subtotal*(state.discountPct/100)).toFixed(2);
@@ -558,23 +480,13 @@
         employee: currentEmployee()
       };
 
-      try{
-        await createSharedOrder({
-          id: entry.id,
-          items: entry.items,
-          subtotal: entry.subtotal,
-          discountPct: entry.discountPct,
-          total: entry.total,
-          employee: entry.employee
-        });
-        await fetchSharedHistory();
-      }catch(e){
-        console.error(e);
-        alert('Could not save to Google Sheets. Check your Web App URL / permissions.');
-      }finally{
-        state.cart=[]; state.discountPct=0;
-        persist(); renderAll(); selectTab('summary');
-      }
+      // Save locally (prepend newest first)
+      state.history.unshift(entry);
+      persistHistory();
+
+      // Clear cart and reset
+      state.cart=[]; state.discountPct=0;
+      persist(); renderAll(); selectTab('summary');
     }
 
     function resetAll(){ state.cart=[]; state.discountPct=0; persist(); renderAll(); renderIngredients(); }
@@ -659,8 +571,6 @@
     // ---------- Init ----------
     function renderAll(){ renderCards(); renderCart(); renderTotals(); renderDiscount(); renderHistory(); }
     renderAll();
-    fetchSharedHistory();
-    document.getElementById('refreshHistoryBtn')?.addEventListener('click', ()=> fetchSharedHistory());
   </script>
 </body>
 </html>
