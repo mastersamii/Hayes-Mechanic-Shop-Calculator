@@ -24,6 +24,18 @@
     header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:20px}
     .brand{display:flex;align-items:center;gap:12px}
     .brand .logo{width:48px;height:48px;border-radius:12px;box-shadow:var(--shadow);display:grid;place-items:center;background:linear-gradient(135deg,var(--brand) 0 55%, var(--accent) 55% 100%);color:#0b1220;font-size:22px}
+
+    /* Make form controls respect the theme */
+    input, select, textarea {
+      color: var(--ink);
+      background: var(--chip);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px 10px;
+    }
+    input::placeholder { color: var(--muted); }
+
+    
     .brand h1{font-size:1.4rem;letter-spacing:.2px}
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
     @media (max-width:980px){.grid{grid-template-columns:1fr}}
@@ -211,9 +223,9 @@
 
   <script>
     // ---------- Google Sheets API (Apps Script) ----------
-    // Your deployed Web App URL:
-    const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbwKO-59M4Aslv9WDT-0XU0t-rwqK3Z4Mu0F1bZ-J48MXeh-DoZSS3jV4vFaLV2cEqHKZw/exec';
-    const SHEETS_API_KEY = ''; // optional if you added one
+    //  Web App URL:
+    const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzJb0s91_qr-7vEBi-vgiMle3pbzNk4tawIYtgB3KGCDI0G-8Has0J9we7qFYRH5vfKOQ/exec';
+    const SHEETS_API_KEY = '';
 
     // ---------- Data ----------
     const MENU = {
