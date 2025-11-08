@@ -25,7 +25,7 @@
     .brand{display:flex;align-items:center;gap:12px}
     .brand .logo{width:48px;height:48px;border-radius:12px;box-shadow:var(--shadow);display:grid;place-items:center;background:linear-gradient(135deg,var(--brand) 0 55%, var(--accent) 55% 100%);color:#0b1220;font-size:22px}
 
-    /* Make form controls respect the theme */
+    /* Theme-aware inputs */
     input, select, textarea {
       color: var(--ink);
       background: var(--chip);
@@ -35,7 +35,6 @@
     }
     input::placeholder { color: var(--muted); }
 
-    
     .brand h1{font-size:1.4rem;letter-spacing:.2px}
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
     @media (max-width:980px){.grid{grid-template-columns:1fr}}
@@ -222,13 +221,77 @@
   </div>
 
   <script>
-    // ---------- Google Sheets API (Apps Script) ----------
-    //  Web App URL:
-const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbyvSKgHFuo0iJeZVulCgSDqUJiyETHfDTsB5c1HMCSMGIf7UkKMVBgt8RCyKrwu19RHWw/exec';
-const SHEETS_API_KEY = 'redline-123';
+    /* =========================
+       CLOUD API (Pizza-style)
+       ========================= */
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzhyno82pjqs7hU1EdAVc4SLutHT8W63CchiotSO1mQwlS9I0HtWllhpRZDjkMKHeMAuA/exec';
 
+    async function api(method, body){
+      const url = API_URL + '?m=' + encodeURIComponent(method);
 
-    // ---------- Data ----------
+      if (method === 'list') {
+        const res = await fetch(url, { method:'GET' });
+        const txt = await res.text();
+        let data = {};
+        try { data = JSON.parse(txt); } catch {}
+        if (!res.ok || data.ok === false) {
+          const msg = (data && data.error) ? data.error : \`HTTP \${res.status} \${res.statusText}\`;
+          throw new Error(msg);
+        }
+        return data;
+      }
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body || {})
+      });
+      const txt = await res.text();
+      let data = {};
+      try { data = JSON.parse(txt); } catch {}
+      if (!res.ok || data.ok === false) {
+        const msg = (data && data.error) ? data.error : \`HTTP \${res.status} \${res.statusText}\`;
+        throw new Error(msg);
+      }
+      return data;
+    }
+
+    async function fetchSharedHistory(){
+      try{
+        const out = await api('list');
+        // Expecting { ok:true, rows:[ { timestamp_ms, items_json, discountPct, subtotal, total, employee } ] }
+        const rows = out.rows || [];
+        state.history = rows.map(row => ({
+          id: Number(row.timestamp_ms),
+          items: JSON.parse(row.items_json || '[]'),
+          discountPct: Number(row.discountPct || 0),
+          subtotal: Number(row.subtotal || 0),
+          total: Number(row.total || 0),
+          employee: row.employee || 'Unknown'
+        }));
+        persistHistory();
+        populateEmpFilter();
+        renderHistory();
+      }catch(e){
+        console.error(e);
+        // fallback to local
+        populateEmpFilter();
+        renderHistory();
+      }
+    }
+
+    async function createSharedOrder(payload){
+      // payload: { id, employee, items, subtotal, discountPct, total }
+      await api('create', payload);
+    }
+
+    async function deleteSharedOrder(id){
+      await api('delete', { id });
+    }
+
+    /* =========================
+       DATA
+       ========================= */
     const MENU = {
       damage: [
         { id:'dm-window', name:'💥Window', price:45,  type:'damage', recipe:{'Glass':1} },
@@ -261,7 +324,9 @@ const SHEETS_API_KEY = 'redline-123';
     );
     const currency = n => `$${n.toFixed(2)}`;
 
-    // ---------- State ----------
+    /* =========================
+       STATE
+       ========================= */
     const STATE_KEY = 'hayes_state_blueyellow_v1';
     const HIST_KEY  = 'hayes_history_blueyellow_v1';
 
@@ -290,7 +355,9 @@ const SHEETS_API_KEY = 'redline-123';
     const persist = () => localStorage.setItem(STATE_KEY, JSON.stringify(state));
     const persistHistory = () => localStorage.setItem(HIST_KEY, JSON.stringify(state.history));
 
-    // ---------- Employee name memory ----------
+    /* =========================
+       EMPLOYEE NAME MEMORY
+       ========================= */
     const empInput = document.getElementById('empName');
     empInput.value = localStorage.getItem('hayes_emp') || '';
     empInput.addEventListener('input', () =>
@@ -298,57 +365,9 @@ const SHEETS_API_KEY = 'redline-123';
     );
     const currentEmployee = () => (empInput.value || 'Unknown').trim();
 
-    // ---------- Google Sheets helpers ----------
-    async function fetchSharedHistory() {
-      try{
-        const url = new URL(SHEETS_API_URL);
-        url.searchParams.set('action', 'list');
-        if (SHEETS_API_KEY) url.searchParams.set('key', SHEETS_API_KEY);
-
-        const res = await fetch(url.toString(), { method: 'GET' });
-        const data = await res.json();
-        if (!data.ok) throw new Error(data.error || 'Failed to fetch history');
-
-        state.history = (data.data || []).map(row => ({
-          id: Number(row.timestamp_ms),
-          items: JSON.parse(row.items_json || '[]'),
-          discountPct: Number(row.discountPct || 0),
-          subtotal: Number(row.subtotal || 0),
-          total: Number(row.total || 0),
-          employee: row.employee || 'Unknown'
-        }));
-        persistHistory();
-        populateEmpFilter();
-        renderHistory();
-      }catch(e){
-        console.error(e);
-        // keep local if fetch fails
-        populateEmpFilter();
-        renderHistory();
-      }
-    }
-
-    async function createSharedOrder(payload){
-      const res = await fetch(SHEETS_API_URL, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ action:'create', key:SHEETS_API_KEY, ...payload })
-      });
-      const data = await res.json();
-      if(!data.ok) throw new Error(data.error || 'Sheets write failed');
-    }
-
-    async function deleteSharedOrder(id){
-      const res = await fetch(SHEETS_API_URL, {
-        method:'POST',
-        headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ action:'delete', key:SHEETS_API_KEY, id })
-      });
-      const data = await res.json();
-      if(!data.ok) throw new Error(data.error || 'Delete failed');
-    }
-
-    // ---------- Cards ----------
+    /* =========================
+       CARDS
+       ========================= */
     function cardHTML(item){
       return `
         <article class="card">
@@ -386,7 +405,9 @@ const SHEETS_API_KEY = 'redline-123';
       });
     }
 
-    // ---------- Cart ----------
+    /* =========================
+       CART
+       ========================= */
     function renderCart(){
       const cart = document.getElementById('cart');
       if(!state.cart.length){
@@ -423,7 +444,9 @@ const SHEETS_API_KEY = 'redline-123';
       persist(); renderCart(); renderTotals(); renderIngredients();
     }
 
-    // ---------- Totals ----------
+    /* =========================
+       TOTALS / DISCOUNT
+       ========================= */
     function renderTotals(){
       const subtotal = state.cart.reduce((s,l)=>s + l.unitPrice*l.qty, 0);
       const manual = +(subtotal * (state.discountPct/100)).toFixed(2);
@@ -434,12 +457,13 @@ const SHEETS_API_KEY = 'redline-123';
       document.getElementById('total').textContent = currency(total);
     }
 
-    // ---------- Discount slider ----------
     const range=document.getElementById('discountRange'); const discountLabel=document.getElementById('discountLabel');
     function renderDiscount(){ range.value=state.discountPct; discountLabel.textContent = `${state.discountPct}%`; }
     range.addEventListener('input',()=>{ state.discountPct=+range.value; persist(); renderTotals(); discountLabel.textContent = `${state.discountPct}%`; });
 
-    // ---------- Employee Filter ----------
+    /* =========================
+       HISTORY (with employee filter)
+       ========================= */
     const empFilter = document.getElementById('empFilter');
     function populateEmpFilter(){
       if(!empFilter) return;
@@ -455,7 +479,6 @@ const SHEETS_API_KEY = 'redline-123';
       return sel==='__all__' ? state.history : state.history.filter(h => (h.employee||'Unknown')===sel);
     }
 
-    // ---------- History ----------
     function ordersServedCounters(view = getFilteredHistory()){
       const todayStr=new Date().toDateString();
       const today=view.filter(h=> new Date(h.id).toDateString()===todayStr).length;
@@ -494,14 +517,12 @@ const SHEETS_API_KEY = 'redline-123';
         </article>
       `).join('');
 
-      // Reorder
       list.querySelectorAll('[data-reorder]').forEach(btn=>btn.addEventListener('click',()=>{
         const id=+btn.getAttribute('data-reorder');
         const h=state.history.find(x=>x.id===id); if(!h) return;
         h.items.forEach(it => addToCart({ id:it.id||null, name:it.name, unitPrice:it.unit, qty:it.qty, type:it.type||'material' }));
       }));
 
-      // Delete (shared)
       list.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click', async ()=>{
         const id = +btn.getAttribute('data-delete');
         if(!confirm('Delete this order for everyone?')) return;
@@ -516,10 +537,12 @@ const SHEETS_API_KEY = 'redline-123';
     }
 
     document.getElementById('clearHistoryBtn').addEventListener('click',()=>{
-      alert('Shared history lives in Google Sheets (tab "Orders"). To clear globally, delete rows there or use Delete per order.');
+      alert('Shared history lives in Google Sheets (via the Apps Script). Use Delete per order or clear rows from the sheet.');
     });
 
-    // ---------- Tabs ----------
+    /* =========================
+       TABS
+       ========================= */
     const tabButtons=document.querySelectorAll('[data-tab]');
     function selectTab(which){
       document.getElementById('tab-summary').hidden = which!=='summary';
@@ -533,7 +556,9 @@ const SHEETS_API_KEY = 'redline-123';
     }
     tabButtons.forEach(b=>b.addEventListener('click',()=>selectTab(b.getAttribute('data-tab'))));
 
-    // ---------- Materials aggregation ----------
+    /* =========================
+       MATERIALS AGGREGATION
+       ========================= */
     function aggregateIngredients(){
       const tally={};
       const add=(n,x=1)=>{ if(!n) return; tally[n]=(tally[n]||0)+x; };
@@ -560,7 +585,9 @@ const SHEETS_API_KEY = 'redline-123';
       const a=document.createElement('a'); a.href=url; a.download='hayes_materials.csv'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     });
 
-    // ---------- Checkout / Reset ----------
+    /* =========================
+       CHECKOUT / RESET
+       ========================= */
     async function checkout(){
       if(!state.cart.length){ alert('Cart is empty.'); return; }
       const subtotal=state.cart.reduce((s,l)=>s+l.unitPrice*l.qty,0);
@@ -605,7 +632,9 @@ const SHEETS_API_KEY = 'redline-123';
     document.getElementById('resetBtn').addEventListener('click',resetAll);
     document.getElementById('resetBtn2').addEventListener('click',resetAll);
 
-    // ---------- Theme ----------
+    /* =========================
+       THEME
+       ========================= */
     const themeBtn=document.getElementById('themeBtn');
     function applyTheme(t){
       document.documentElement.setAttribute('data-theme',t);
@@ -619,7 +648,9 @@ const SHEETS_API_KEY = 'redline-123';
       applyTheme(next);
     });
 
-    // ---------- Buy Materials ----------
+    /* =========================
+       BUY MATERIALS
+       ========================= */
     function renderBuyTab(){
       const wrap = document.getElementById('buyRows');
       wrap.innerHTML = `
@@ -677,7 +708,9 @@ const SHEETS_API_KEY = 'redline-123';
       document.getElementById('buyTotal').textContent    = currency(sub);
     }
 
-    // ---------- Init ----------
+    /* =========================
+       INIT
+       ========================= */
     function renderAll(){ renderCards(); renderCart(); renderTotals(); renderDiscount(); renderHistory(); }
     renderAll();
     fetchSharedHistory();
