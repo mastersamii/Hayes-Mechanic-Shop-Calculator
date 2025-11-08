@@ -10,45 +10,20 @@
   <meta name="theme-color" content="#0f172a">
   <style>
     :root{
-      /* Hayes brand: blue + yellow */
-      --brand:#2563eb;             /* blue */
-      --accent:#fbbf24;            /* yellow */
-      --accent-2:#f59e0b;          /* deeper yellow */
-
-      --ink:#0b1220;               /* text */
-      --muted:#64748b;             /* subtle text */
-      --bg:#f6f8fb;                /* page bg */
-      --panel:#ffffff;             /* panel bg */
-      --card:#ffffff;              /* card bg */
-      --chip:#f1f5f9;              /* chips / btns */
-      --border:#e2e8f0;            /* borders */
-      --radius:16px;
-      --shadow:0 10px 30px rgba(2,6,23,.08);
+      --brand:#2563eb; --accent:#fbbf24; --accent-2:#f59e0b;
+      --ink:#0b1220; --muted:#64748b; --bg:#f6f8fb; --panel:#ffffff; --card:#ffffff; --chip:#f1f5f9; --border:#e2e8f0;
+      --radius:16px; --shadow:0 10px 30px rgba(2,6,23,.08);
     }
     [data-theme="dark"]{
-      --bg:#0b1220;
-      --panel:#0f172a;
-      --card:#0b1328;
-      --chip:#0b1b3a;
-      --border:#1e293b;
-      --ink:#e6edf6;
-      --muted:#93a4b8;
-      --brand:#3b82f6;             /* lighter blue in dark */
-      --accent:#fbbf24;            /* yellow stays bright */
-      --accent-2:#f59e0b;
+      --bg:#0b1220; --panel:#0f172a; --card:#0b1328; --chip:#0b1b3a; --border:#1e293b; --ink:#e6edf6; --muted:#93a4b8; --brand:#3b82f6; --accent:#fbbf24; --accent-2:#f59e0b;
     }
-
     *{box-sizing:border-box}
     html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Arial}
     h1,h2,h3{margin:0}
     .container{max-width:1200px;margin:32px auto;padding:0 16px}
     header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:20px}
     .brand{display:flex;align-items:center;gap:12px}
-    .brand .logo{
-      width:48px;height:48px;border-radius:12px;box-shadow:var(--shadow);display:grid;place-items:center;
-      background:linear-gradient(135deg,var(--brand) 0 55%, var(--accent) 55% 100%);
-      color:#0b1220;font-size:22px
-    }
+    .brand .logo{width:48px;height:48px;border-radius:12px;box-shadow:var(--shadow);display:grid;place-items:center;background:linear-gradient(135deg,var(--brand) 0 55%, var(--accent) 55% 100%);color:#0b1220;font-size:22px}
     .brand h1{font-size:1.4rem;letter-spacing:.2px}
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
     @media (max-width:980px){.grid{grid-template-columns:1fr}}
@@ -83,17 +58,10 @@
     .discount{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
     .discount input[type="range"]{width:100%}
     .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:transparent;border:2px solid var(--brand);color:var(--brand);border-radius:8px;padding:4px 8px;font-weight:800}
-
-    /* Buy Materials rows */
-    .buy-row{
-      display:grid;
-      grid-template-columns:1.2fr .8fr .8fr .8fr;
-      gap:10px; align-items:center; padding:8px 0;
-      border-bottom:1px dashed var(--border);
-    }
+    .buy-row{display:grid;grid-template-columns:1.2fr .8fr .8fr .8fr;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--border)}
     .buy-row:last-child{border-bottom:none}
     .buy-row .right{text-align:right}
-    .buy-input{width:100%; padding:8px 10px; border-radius:10px; border:1px solid var(--border); background:var(--chip); color:var(--ink)}
+    .buy-input{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--chip);color:var(--ink)}
   </style>
 </head>
 <body>
@@ -107,6 +75,12 @@
         </div>
       </div>
       <div class="toolrow">
+        <!-- Employee input -->
+        <label class="chip" style="display:flex;align-items:center;gap:8px">
+          <span>Employee</span>
+          <input id="empName" placeholder="e.g., Samii" style="border:1px solid var(--border);background:var(--chip);padding:6px 10px;border-radius:10px;width:160px;">
+        </label>
+
         <span class="chip">Autosaves</span>
         <button class="btn ghost" id="themeBtn" aria-pressed="false" title="Toggle dark mode">🌙 Dark</button>
         <button class="btn ghost" id="resetBtn">Clear All</button>
@@ -178,6 +152,16 @@
 
           <!-- HISTORY TAB -->
           <div id="tab-history" role="tabpanel" hidden>
+            <div class="toolrow" style="margin-bottom:8px;">
+              <label class="chip" style="display:flex;align-items:center;gap:8px">
+                <span>Filter</span>
+                <select id="empFilter" style="border:1px solid var(--border);background:var(--chip);padding:6px 10px;border-radius:10px;">
+                  <option value="__all__">All employees</option>
+                </select>
+              </label>
+              <button class="btn" id="refreshHistoryBtn">Refresh</button>
+            </div>
+
             <div class="summary" style="gap:8px; margin-bottom:8px;">
               <div class="row"><span>Orders served today</span><strong id="ordersToday">0</strong></div>
               <div class="row"><span>Orders served overall</span><strong id="ordersOverall">0</strong></div>
@@ -208,9 +192,7 @@
               Enter how many units a seller brings you. Payouts use your shop buy rates.
             </div>
 
-            <div class="order-card" id="buyRows" style="padding:8px;">
-              <!-- rows injected here -->
-            </div>
+            <div class="order-card" id="buyRows" style="padding:8px;"></div>
 
             <div class="summary" style="margin-top:12px;">
               <div class="row"><span>Subtotal to Pay</span><strong id="buySubtotal">$0.00</strong></div>
@@ -228,6 +210,11 @@
   </div>
 
   <script>
+    // ---------- Google Sheets API (Apps Script) ----------
+    // Your deployed Web App URL:
+    const SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbwKO-59M4Aslv9WDT-0XU0t-rwqK3Z4Mu0F1bZ-J48MXeh-DoZSS3jV4vFaLV2cEqHKZw/exec';
+    const SHEETS_API_KEY = ''; // optional if you added one
+
     // ---------- Data ----------
     const MENU = {
       damage: [
@@ -243,13 +230,11 @@
         { id:'mat-alum',    name:'🧱Aluminum',   price:100, type:'material', recipe:{'Aluminum':1} },
         { id:'mat-steel',   name:'🔧Steel',      price:125, type:'material', recipe:{'Steel':1} },
         { id:'mat-rubber',  name:'🧽Rubber',     price:20,  type:'material', recipe:{'Rubber':1} },
-        { id:'shop-repair', name:'🧰Repair Kit', price:600, type:'material',
-          recipe:{'Aluminum':2,'Scrap':2,'Glass':2,'Rubber':4} },
+        { id:'shop-repair', name:'🧰Repair Kit', price:600, type:'material', recipe:{'Aluminum':2,'Scrap':2,'Glass':2,'Rubber':4} },
         { id:'shop-oil',    name:'🛢️Motor Oil',  price:600, type:'material', recipe:{'Motor Oil':1} },
       ]
     };
 
-    // BUY RATES
     const BUY_RATES = [
       { key:'Rubber',   icon:'🧽', unit:10 },
       { key:'Glass',    icon:'💎', unit:30 },
@@ -258,11 +243,9 @@
       { key:'Steel',    icon:'🔧', unit:90 },
     ];
 
-    // Build RECIPE_MAP for the ingredients tab
     const RECIPE_MAP = Object.fromEntries(
       [...MENU.damage, ...MENU.materials].map(x => [x.id, x.recipe||{}])
     );
-
     const currency = n => `$${n.toFixed(2)}`;
 
     // ---------- State ----------
@@ -273,7 +256,7 @@
       cart:[],
       discountPct:0,
       history:[],
-      buy:{} // {Rubber: 0, Glass: 0, ...}
+      buy:{}
     };
 
     try{
@@ -293,6 +276,64 @@
 
     const persist = () => localStorage.setItem(STATE_KEY, JSON.stringify(state));
     const persistHistory = () => localStorage.setItem(HIST_KEY, JSON.stringify(state.history));
+
+    // ---------- Employee name memory ----------
+    const empInput = document.getElementById('empName');
+    empInput.value = localStorage.getItem('hayes_emp') || '';
+    empInput.addEventListener('input', () =>
+      localStorage.setItem('hayes_emp', empInput.value.trim())
+    );
+    const currentEmployee = () => (empInput.value || 'Unknown').trim();
+
+    // ---------- Google Sheets helpers ----------
+    async function fetchSharedHistory() {
+      try{
+        const url = new URL(SHEETS_API_URL);
+        url.searchParams.set('action', 'list');
+        if (SHEETS_API_KEY) url.searchParams.set('key', SHEETS_API_KEY);
+
+        const res = await fetch(url.toString(), { method: 'GET' });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.error || 'Failed to fetch history');
+
+        state.history = (data.data || []).map(row => ({
+          id: Number(row.timestamp_ms),
+          items: JSON.parse(row.items_json || '[]'),
+          discountPct: Number(row.discountPct || 0),
+          subtotal: Number(row.subtotal || 0),
+          total: Number(row.total || 0),
+          employee: row.employee || 'Unknown'
+        }));
+        persistHistory();
+        populateEmpFilter();
+        renderHistory();
+      }catch(e){
+        console.error(e);
+        // keep local if fetch fails
+        populateEmpFilter();
+        renderHistory();
+      }
+    }
+
+    async function createSharedOrder(payload){
+      const res = await fetch(SHEETS_API_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ action:'create', key:SHEETS_API_KEY, ...payload })
+      });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || 'Sheets write failed');
+    }
+
+    async function deleteSharedOrder(id){
+      const res = await fetch(SHEETS_API_URL, {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ action:'delete', key:SHEETS_API_KEY, id })
+      });
+      const data = await res.json();
+      if(!data.ok) throw new Error(data.error || 'Delete failed');
+    }
 
     // ---------- Cards ----------
     function cardHTML(item){
@@ -385,24 +426,45 @@
     function renderDiscount(){ range.value=state.discountPct; discountLabel.textContent = `${state.discountPct}%`; }
     range.addEventListener('input',()=>{ state.discountPct=+range.value; persist(); renderTotals(); discountLabel.textContent = `${state.discountPct}%`; });
 
+    // ---------- Employee Filter ----------
+    const empFilter = document.getElementById('empFilter');
+    function populateEmpFilter(){
+      if(!empFilter) return;
+      const current = empFilter.value || '__all__';
+      const names = Array.from(new Set(state.history.map(h => (h.employee||'Unknown').trim()))).sort((a,b)=>a.localeCompare(b));
+      empFilter.innerHTML = `<option value="__all__">All employees</option>` + names.map(n => `<option value="${n}">${n}</option>`).join('');
+      if([...empFilter.options].some(o=>o.value===current)) empFilter.value = current;
+    }
+    empFilter?.addEventListener('change', renderHistory);
+
+    function getFilteredHistory(){
+      const sel = empFilter?.value || '__all__';
+      return sel==='__all__' ? state.history : state.history.filter(h => (h.employee||'Unknown')===sel);
+    }
+
     // ---------- History ----------
-    function ordersServedCounters(){
+    function ordersServedCounters(view = getFilteredHistory()){
       const todayStr=new Date().toDateString();
-      const today=state.history.filter(h=> new Date(h.id).toDateString()===todayStr).length;
-      const overall=state.history.length;
+      const today=view.filter(h=> new Date(h.id).toDateString()===todayStr).length;
+      const overall=view.length;
       document.getElementById('ordersToday').textContent=today;
       document.getElementById('ordersOverall').textContent=overall;
     }
+
     function renderHistory(){
-      ordersServedCounters();
+      const view = getFilteredHistory();
+      ordersServedCounters(view);
       const list=document.getElementById('historyList');
-      if(!state.history.length){ list.innerHTML='<div class="muted">No past orders yet. Checkout to save one.</div>'; return; }
-      list.innerHTML = state.history.map(h=>`
+      if(!view.length){ list.innerHTML='<div class="muted">No past orders yet for this filter.</div>'; return; }
+      list.innerHTML = view.map(h=>`
         <article class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
             <div>
               <div><strong>${new Date(h.id).toLocaleString()}</strong></div>
-              <div class="small">${h.items.length} item(s) • Discount ${h.discountPct}%</div>
+              <div class="small">
+                ${h.items.length} item(s) • Discount ${h.discountPct}% •
+                <strong>Employee:</strong> ${h.employee || 'Unknown'}
+              </div>
             </div>
             <div><strong>${currency(h.total)}</strong></div>
           </div>
@@ -418,17 +480,31 @@
           </div>
         </article>
       `).join('');
+
+      // Reorder
       list.querySelectorAll('[data-reorder]').forEach(btn=>btn.addEventListener('click',()=>{
         const id=+btn.getAttribute('data-reorder');
         const h=state.history.find(x=>x.id===id); if(!h) return;
         h.items.forEach(it => addToCart({ id:it.id||null, name:it.name, unitPrice:it.unit, qty:it.qty, type:it.type||'material' }));
       }));
-      list.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click',()=>{
-        const id=+btn.getAttribute('data-delete');
-        state.history = state.history.filter(x=>x.id!==id); persistHistory(); renderHistory();
+
+      // Delete (shared)
+      list.querySelectorAll('[data-delete]').forEach(btn=>btn.addEventListener('click', async ()=>{
+        const id = +btn.getAttribute('data-delete');
+        if(!confirm('Delete this order for everyone?')) return;
+        try{
+          await deleteSharedOrder(id);
+          await fetchSharedHistory();
+        }catch(e){
+          console.error(e);
+          alert('Could not delete shared order.');
+        }
       }));
     }
-    document.getElementById('clearHistoryBtn').addEventListener('click',()=>{ if(confirm('Clear all saved orders?')){ state.history=[]; persistHistory(); renderHistory(); ordersServedCounters(); } });
+
+    document.getElementById('clearHistoryBtn').addEventListener('click',()=>{
+      alert('Shared history lives in Google Sheets (tab "Orders"). To clear globally, delete rows there or use Delete per order.');
+    });
 
     // ---------- Tabs ----------
     const tabButtons=document.querySelectorAll('[data-tab]');
@@ -439,16 +515,15 @@
       document.getElementById('tab-buy').hidden = which!=='buy';
       tabButtons.forEach(b=>b.setAttribute('aria-selected', String(b.getAttribute('data-tab')===which)));
       if(which==='ingredients') renderIngredients();
-      if(which==='history') ordersServedCounters();
+      if(which==='history'){ populateEmpFilter(); renderHistory(); }
       if(which==='buy') renderBuyTab();
     }
     tabButtons.forEach(b=>b.addEventListener('click',()=>selectTab(b.getAttribute('data-tab'))));
 
-    // ---------- Materials aggregation (for "Materials List") ----------
+    // ---------- Materials aggregation ----------
     function aggregateIngredients(){
       const tally={};
       const add=(n,x=1)=>{ if(!n) return; tally[n]=(tally[n]||0)+x; };
-
       state.cart.forEach(line=>{
         const rec = RECIPE_MAP[line.id] || {};
         for(const [ing,c] of Object.entries(rec)) add(ing, c*line.qty);
@@ -473,19 +548,43 @@
     });
 
     // ---------- Checkout / Reset ----------
-    function checkout(){
+    async function checkout(){
       if(!state.cart.length){ alert('Cart is empty.'); return; }
       const subtotal=state.cart.reduce((s,l)=>s+l.unitPrice*l.qty,0);
       const manual=+(subtotal*(state.discountPct/100)).toFixed(2);
       const total=+(subtotal-manual).toFixed(2);
-      const entry={
-        id:Date.now(),
-        items:state.cart.map(l=>({ id:l.id||null,name:l.name,qty:l.qty,unit:l.unitPrice,type:l.type||'material',lineTotal:+(l.unitPrice*l.qty).toFixed(2) })),
-        discountPct:state.discountPct, subtotal:+subtotal.toFixed(2), total
+
+      const entry = {
+        id: Date.now(),
+        items: state.cart.map(l=>({
+          id:l.id||null, name:l.name, qty:l.qty, unit:l.unitPrice,
+          type:l.type||'material', lineTotal:+(l.unitPrice*l.qty).toFixed(2)
+        })),
+        discountPct: state.discountPct,
+        subtotal:+subtotal.toFixed(2),
+        total,
+        employee: currentEmployee()
       };
-      state.history.unshift(entry); persistHistory();
-      state.cart=[]; state.discountPct=0; persist(); renderAll(); selectTab('summary');
+
+      try{
+        await createSharedOrder({
+          id: entry.id,
+          items: entry.items,
+          subtotal: entry.subtotal,
+          discountPct: entry.discountPct,
+          total: entry.total,
+          employee: entry.employee
+        });
+        await fetchSharedHistory();
+      }catch(e){
+        console.error(e);
+        alert('Could not save to Google Sheets. Check your Web App URL / permissions.');
+      }finally{
+        state.cart=[]; state.discountPct=0;
+        persist(); renderAll(); selectTab('summary');
+      }
     }
+
     function resetAll(){ state.cart=[]; state.discountPct=0; persist(); renderAll(); renderIngredients(); }
 
     document.getElementById('checkoutBtn').addEventListener('click',checkout);
@@ -507,11 +606,9 @@
       applyTheme(next);
     });
 
-    // ---------- Buy Materials (NEW) ----------
+    // ---------- Buy Materials ----------
     function renderBuyTab(){
       const wrap = document.getElementById('buyRows');
-
-      // Build rows
       wrap.innerHTML = `
         <div class="buy-row small muted" style="font-weight:700;">
           <div>Material</div><div class="right">Unit</div><div class="right">Qty</div><div class="right">Line</div>
@@ -525,14 +622,11 @@
           </div>
         `).join('')}
       `;
-
-      // Hook inputs (skip header)
       wrap.querySelectorAll('.buy-row[data-key]').forEach(row=>{
         const key   = row.getAttribute('data-key');
         const input = row.querySelector('input.buy-input');
         const line  = row.querySelector('.lineTotal');
         const unit  = BUY_RATES.find(x=>x.key===key)?.unit || 0;
-
         const recalc = ()=>{
           const qty = Math.max(0, parseInt(input.value || '0', 10));
           state.buy[key] = qty;
@@ -540,40 +634,30 @@
           line.textContent = currency(qty * unit);
           renderBuyTotals();
         };
-
         input.addEventListener('input', recalc);
         input.addEventListener('change', recalc);
-        recalc(); // init each line
+        recalc();
       });
-
-      // Buttons
       document.getElementById('clearBuyBtn')?.addEventListener('click',()=>{
         BUY_RATES.forEach(r=>state.buy[r.key]=0);
         persist();
-        renderBuyTab(); // rerender inputs and totals
+        renderBuyTab();
       });
-
       document.getElementById('copyBuyBtn')?.addEventListener('click',()=>{
-        const lines = BUY_RATES
-          .map(r=>{
-            const q = state.buy[r.key]||0;
-            if(!q) return null;
-            const total = q*r.unit;
-            return `${r.key}: ${q} × ${currency(r.unit)} = ${currency(total)}`;
-          })
-          .filter(Boolean);
+        const lines = BUY_RATES.map(r=>{
+          const q = state.buy[r.key]||0;
+          if(!q) return null;
+          const total = q*r.unit;
+          return `${r.key}: ${q} × ${currency(r.unit)} = ${currency(total)}`;
+        }).filter(Boolean);
         const grand = currency(calcBuySubtotal());
         const txt = (lines.length? lines.join('\n')+'\n':'')+`Total to Pay: ${grand}`;
         navigator.clipboard.writeText(txt).then(()=>alert('Payout breakdown copied!'));
       });
-
-      // Ensure totals render even if all qty are zero
       renderBuyTotals();
     }
 
-    function calcBuySubtotal(){
-      return BUY_RATES.reduce((s,r)=> s + (state.buy[r.key]||0)*r.unit, 0);
-    }
+    function calcBuySubtotal(){ return BUY_RATES.reduce((s,r)=> s + (state.buy[r.key]||0)*r.unit, 0); }
     function renderBuyTotals(){
       const sub = calcBuySubtotal();
       document.getElementById('buySubtotal').textContent = currency(sub);
@@ -583,6 +667,8 @@
     // ---------- Init ----------
     function renderAll(){ renderCards(); renderCart(); renderTotals(); renderDiscount(); renderHistory(); }
     renderAll();
+    fetchSharedHistory();
+    document.getElementById('refreshHistoryBtn')?.addEventListener('click', ()=> fetchSharedHistory());
   </script>
 </body>
 </html>
