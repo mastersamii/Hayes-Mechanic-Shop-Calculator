@@ -18,6 +18,7 @@
       --ink:#e6edf6; --muted:#93a4b8; --brand:#3b82f6; --accent:#fbbf24; --accent-2:#f59e0b;
     }
     *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
     html,body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Ubuntu,Arial}
     h1,h2,h3{margin:0}
     .container{max-width:1200px;margin:32px auto;padding:0 16px}
@@ -33,6 +34,22 @@
     input::placeholder { color: var(--muted); }
 
     .brand h1{font-size:1.4rem;letter-spacing:.2px}
+
+    .category-nav{
+      position:sticky;top:0;z-index:20;
+      display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+      background:var(--panel);border:1px solid var(--border);
+      border-radius:14px;padding:10px;margin-bottom:16px;
+      box-shadow:var(--shadow);
+    }
+    .category-nav a{
+      display:inline-flex;align-items:center;justify-content:center;
+      padding:8px 10px;border-radius:10px;border:1px solid var(--border);
+      background:var(--chip);color:inherit;text-decoration:none;font-weight:700;font-size:.9rem;
+    }
+    .category-nav a:hover{filter:brightness(0.98)}
+    .section-anchor{scroll-margin-top:90px}
+
     .grid{display:grid;grid-template-columns:1.2fr .8fr;gap:20px}
     @media (max-width:980px){.grid{grid-template-columns:1fr}}
     .panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius)}
@@ -73,7 +90,7 @@
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="container" id="top">
     <header>
       <div class="brand">
         <div class="logo" aria-hidden="true">🔧</div>
@@ -104,18 +121,25 @@
       </div>
     </div>
 
+
+    <nav class="category-nav" aria-label="Menu category shortcuts">
+      <a href="#top">⬆️ Top</a>
+      <a href="#section-body-parts">🔧 Body Parts</a>
+      <a href="#section-materials">🧰 Materials</a>
+    </nav>
+
     <div class="grid">
       <!-- Left: Menu -->
       <section class="panel">
         <h2>Menu</h2>
         <div class="content">
           <div class="section">
-            <h3 style="margin:0 0 8px 0">Body Parts</h3>
+            <h3 id="section-body-parts" class="section-anchor" style="margin:0 0 8px 0">Body Parts</h3>
             <div class="cards" id="damage"></div>
           </div>
 
           <div class="section">
-            <h3 style="margin:0 0 8px 0">Materials & Shop Items</h3>
+            <h3 id="section-materials" class="section-anchor" style="margin:0 0 8px 0">Materials & Shop Items</h3>
             <div class="cards" id="materials"></div>
           </div>
         </div>
@@ -216,6 +240,7 @@
         { id:'dm-hood',   name:'🛡️Hood',  price:75,  type:'damage',  recipe:{'Scrap':1} },
         { id:'dm-trunk',  name:'📦Trunk',  price:75,  type:'damage',  recipe:{'Scrap':1} },
         { id:'dm-tire',   name:'⚫Tire',   price:20,  type:'damage',  recipe:{'Rubber':1} },
+        { id:'brake-pads', name:'🛑Brake Pads', price:300, type:'damage', recipe:{'Steel':2} },
       ],
       materials: [
         { id:'mat-glass',   name:'💎Glass',      price:45,  type:'material', recipe:{'Glass':1} },
